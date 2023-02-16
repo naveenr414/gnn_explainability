@@ -40,4 +40,4 @@ def get_cora_dataset():
     data.test_mask = torch.zeros(data.num_nodes, dtype=torch.bool)
     data.test_mask[data.num_nodes - 500:] = 1
     
-    return data
+    return train_dataset,data
