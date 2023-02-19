@@ -85,6 +85,20 @@ class ProtGNNExplainer(PrototypeExplainer):
         
         return np.argmin(min_distances,axis=1)
 
+
+class CDMExplainer(PrototypeExplainer):
+    def __init__(self, layer_key="conv3"):
+        self.layer_key = layer_key
+
+    def learn_prototypes(self, model, data):
+        pass
+
+    def get_prediction(self, model, data):
+        concepts, _ = model(data.x, data.edge_index)
+        #activation = torch.squeeze(activation_list[layer_key]).detach().numpy()
+        return
+
+
 def explain_model(explainer,data,node_idx):
     """Run an explainer from PyTorch using some node from a dataset
     

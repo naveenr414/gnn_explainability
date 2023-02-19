@@ -20,8 +20,47 @@ class Net(torch.nn.Module):
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
 
-    
-def test_model(model, data,protgnn=False):
+
+class GCN(torch.nn.Module):
+    def __init__(self, num_features, dim, num_classes):
+        super(GCN, self).__init__()
+
+        self.conv0 = GCNConv(num_features, dim)
+        self.conv1 = GCNConv(dim, dim)
+        self.conv2 = GCNConv(dim, dim)
+        self.conv3 = GCNConv(dim, dim)
+        #         self.conv4 = GCNConv(dim, dim)
+
+        # linear layers
+        self.lens = torch.nn.Sequential(te.nn.EntropyLinear(dim, 1, n_classes=num_classes))
+
+    def forward(self, x, edge_index, data=None):
+        x = self.conv0(x, edge_index)
+        x = F.leaky_relu(x)
+
+        x = self.conv1(x, edge_index)
+        x = F.leaky_relu(x)
+
+        x = self.conv2(x, edge_index)
+        x = F.leaky_relu(x)
+
+        x = self.conv3(x, edge_index)
+        x = F.leaky_relu(x)
+
+        #         x = self.conv4(x, edge_index)
+        #         x = F.leaky_relu(x)
+
+        self.gnn_embedding = x
+
+        x = F.softmax(x, dim=-1)
+        x = torch.div(x, torch.max(x, dim=-1)[0].unsqueeze(1))
+        concepts = x
+
+        x = self.lens(x)
+
+        return concepts, x.squeeze(-1)
+
+def test_model(model, data,protgnn=False, if_interpretable_model=False):
     """Helper function for model training, which takes in a model and data, and evaluates it
     
     Arguments:
@@ -32,7 +71,12 @@ def test_model(model, data,protgnn=False):
     """
     
     model.eval()
-    logits, accs = model(data.x, data.edge_index, data), []
+
+    if if_interpretable_model:
+        _, logits = model(data.x, data.edge_index, data)
+        accs = []
+    else:
+        logits, accs = model(data.x, data.edge_index, data), []
 
     if protgnn:
         logits = logits[0]
@@ -44,7 +88,7 @@ def test_model(model, data,protgnn=False):
     return accs
 
     
-def train_model(epochs,model,device,data,optimizer,test_function,protgnn=False):
+def train_model(epochs,model,device,data,optimizer,test_function,protgnn=False, if_interpretable_model=False):
     """Train a model for a set number of epochs
     
     Arguments:
@@ -72,7 +116,11 @@ def train_model(epochs,model,device,data,optimizer,test_function,protgnn=False):
 
         data = data.to(device)
         optimizer.zero_grad()
-        log_logits = model(data.x, data.edge_index, data)
+
+        if if_interpretable_model:
+            concepts, log_logits = model(data.x, data.edge_index, data)
+        else:
+            log_logits = model(data.x, data.edge_index, data)
 
         if protgnn:
             log_logits = log_logits[0]
@@ -84,7 +132,7 @@ def train_model(epochs,model,device,data,optimizer,test_function,protgnn=False):
         optimizer.step()
 
         # validate
-        train_acc, test_acc = test_function(model, data,protgnn=protgnn)
+        train_acc, test_acc = test_function(model, data, protgnn=protgnn, if_interpretable_model=if_interpretable_model)
         train_loss = loss
 
         t.set_description('[Train_loss:{:.6f} Train_acc: {:.4f}, Test_acc: {:.4f}]'.format(loss, train_acc, test_acc))
