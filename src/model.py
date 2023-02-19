@@ -32,7 +32,11 @@ def test_model(model, data,protgnn=False):
     """
     
     model.eval()
-    logits, accs = model(data.x, data.edge_index, data)[0], []
+    logits, accs = model(data.x, data.edge_index, data), []
+
+    if protgnn:
+        logits = logits[0]
+    
     for _, mask in data('train_mask', 'test_mask'):
         pred = logits[mask].max(1)[1]
         acc = pred.eq(data.y[mask]).sum().item() / mask.sum().item()
