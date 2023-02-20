@@ -138,3 +138,25 @@ def train_model(epochs,model,device,data,optimizer,test_function,protgnn=False, 
         t.set_description('[Train_loss:{:.6f} Train_acc: {:.4f}, Test_acc: {:.4f}]'.format(loss, train_acc, test_acc))
         
     return model
+
+
+global activation_list
+activation_list = {}
+
+def register_hooks(model):
+    for name, m in model.named_modules():
+            if isinstance(m, GCNConv):
+                m.register_forward_hook(get_activation(f"{name}"))
+
+    return model
+
+
+def get_activation(idx):
+    def hook(model, in_put, output):
+        if idx == "diff_pool":
+            ret_labels = ["pooled_node_feat_matrix", "coarse_adj", "link_pred_loss", "entropy_reg"]
+            for l, t in zip(ret_labels, output):
+                activation_list[f"{idx}_{l}"] = t.detach()
+        else:
+            activation_list[idx] = output.detach()
+    return hook
