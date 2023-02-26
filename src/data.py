@@ -12,7 +12,7 @@ def get_dataset(dataset_name):
     """Return one of BACommunity or another dataset from DGL
     
     Arguments:
-        dataset_name: String, which is one of 'BACommunity'
+        dataset_name: String, which is one of 'BACommunity', 'BAShape'
     
     Returns: dataset from dgl.data
     """
@@ -46,6 +46,8 @@ def get_dataset(dataset_name):
     
     batch.train_mask = torch.Tensor(np.array(train_mask)).bool()
     batch.test_mask = torch.Tensor(np.array(test_mask)).bool()
+    
+    batch.x = batch.x.float()
 
     
     return batch

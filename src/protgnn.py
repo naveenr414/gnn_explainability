@@ -152,6 +152,7 @@ class GCNNet_NC(nn.Module):
             prototype_activations, min_distances = self.prototype_distances(x)
             logits = self.last_layer(prototype_activations)
             probs = self.Softmax(logits)
+            probs = torch.log(probs)
             return logits, probs, emb, min_distances
         else:
             for i in range(self.num_mlp_layers - 1):
@@ -161,4 +162,5 @@ class GCNNet_NC(nn.Module):
 
             logits = self.mlps[-1](x)
             probs = self.Softmax(logits)
+            probs = torch.log(probs)
             return logits, probs, emb, []

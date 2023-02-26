@@ -42,6 +42,9 @@ class GCExplainer(PrototypeExplainer):
             model.eval()
             model(data.x, data.edge_index, data)
         hook_handle.remove()
+        
+        activations = [i for idx, i in enumerate(activations) if data.train_mask[idx]]
+        
         kmeans,activations_numpy = cluster_activations(activations,num_clusters = self.num_clusters)
         
         self.kmeans = kmeans
@@ -65,7 +68,7 @@ class GCExplainer(PrototypeExplainer):
             model(data.x, data.edge_index, data)
         hook_handle.remove()
         
-        activations = torch.cat(activations, dim=0)
+        activations = torch.cat(activations, dim=0)[data.test_mask]
 
         activations = activations.view(activations.size(0), -1)
         activations = activations.cpu().numpy()
@@ -95,9 +98,30 @@ class CDMExplainer(PrototypeExplainer):
     def __init__(self, layer_key="conv3"):
         self.layer_key = layer_key
 
-    def get_explanation(self, model, data, activation_list):
+    def learn_prototypes(self,model,data):
+        """Learn the activations from a model 
+        
+        Arguments:
+          model: Instance of a torch_geometric model
+          data: Graph data
+          
+        Returns: Nothing
+        
+        Side Effects: Sets prototypes to be the activation list
+        """
+        
+        hook_handle, activations = add_hook_model(model,self.layer_key)
+        with torch.no_grad():
+            model.eval()
+            model(data.x, data.edge_index, data)
+        hook_handle.remove()
+        
+        self.activation_list = [i for idx, i in enumerate(activations)]
+        self.activation_list = torch.cat(self.activation_list, dim=0)
+                        
+    def get_prediction(self, model, data):
         concepts, _ = model(data.x, data.edge_index)
-        activation = torch.squeeze(activation_list[self.layer_key]).detach().numpy()
+        activation = torch.squeeze(self.activation_list).detach().numpy()
         explanations = explain_classes(model, concepts, data.y, data.train_mask, data.test_mask)
 
         return explanations
