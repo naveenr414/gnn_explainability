@@ -37,6 +37,6 @@ def aggressive_adversary(data, frac):
             if i < j and random.random() < 0.1:
                 data.edge_index = np.append(data.edge_index, [[node_i], [node_j]], axis=1)
 
-    data.edge_index = torch.Tensor(data.edge_index)
+    data.edge_index = torch.Tensor(data.edge_index).long()
 
     return data

@@ -19,7 +19,9 @@ from src.explainer import *
 from src.plot import *
 from src.modify import *
 from src.protgnn import *
+from src.metrics import *
 import argparse
+
 
 def evaluate_model(model, dataset, explainer_class, output_location):
     """Evaluate an explainability method by computing results after running over the test-portion of a dataset
@@ -48,11 +50,11 @@ if __name__ == "__main__":
     datasets = ['bashapes','bacommunity']
     
     parser = argparse.ArgumentParser(description='Evaluate a methodology for a particular dataset and noise method')
-    parser.add_argument('--explain_method',type=str, values=explain_methods,
+    parser.add_argument('--explain_method',type=str, choices=explain_methods,
                         help='Which explainability method to use; either gcexplainer, cdm, or protgnn')
-    parser.add_argument('--noise_method', type=str, values=noise_methods,
+    parser.add_argument('--noise_method', type=str, choices=noise_methods,
                         help='Which algorithm to use to generate noise: either aggressive, targeted, or conservative')
-    parser.add_argument('--dataset', type=str, values=datasets,
+    parser.add_argument('--dataset', type=str, choices=datasets,
                         help='Which dataset we\'re testing on; either bashapes or bacommunity')
     parser.add_argument('--model_location', type=str,
                         help='Where to load the model we use for evaluation from')
@@ -61,26 +63,33 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    formatted_dataset = args.dataset[:3].capitalize() + args.dataset[3:]
+    formatted_dataset = args.dataset[:3].upper() + args.dataset[3:]
     dataset = ba_dataset = get_dataset(formatted_dataset)
     
     num_classes = len(set([int(i) for i in ba_dataset.y]))
     num_features = ba_dataset.x.shape[-1]
-    dim = 16
+    dim = 20
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = Net(num_features=num_features, dim=dim, num_classes=num_classes).to(device)
+    
+    if args.explain_method == 'gcexplainer':
+        model = Net(num_features=num_features, dim=dim, num_classes=num_classes).to(device)
+    elif args.explain_method == 'protgnn':
+        model = GCNNet_NC(num_features, num_classes, model_args)
+    elif args.explain_method == 'cdm':
+        model = GCN(num_features=num_features, dim=dim, num_classes=num_classes)
+        
     model.load_state_dict(torch.load(args.model_location))
     
     # Baseline evaluation
     explainer_class_dict = {'protgnn': ProtGNNExplainer, 'cdm': CDMExplainer, 'gcexplainer': GCExplainer}
     explainer_class = explainer_class_dict[args.explain_method]
     
-    baseline_activations = evaluate_model(model,dataset,explainer_class)
+    baseline_activations = evaluate_model(model,dataset,explainer_class,args.output_location)
     
     modification_dict = {'aggressive': lambda a: aggressive_adversary(a,0.1)}
     modified_dataset = modification_dict[args.noise_method](dataset)
-    modified_activations = evaluate_model(model,modified_dataset,explainer_class)
+    modified_activations = evaluate_model(model,modified_dataset,explainer_class,args.output_location)
     
     evaluation_metrics = [fidelity_plus]
     evaluation_names = ["Fidelity"]
@@ -89,15 +98,15 @@ if __name__ == "__main__":
     w = open(args.output_location,"w")
     w.write("Modification Function: {}\n".format(args.noise_method))
     w.write("Dataset: {}\n".format(args.dataset))
-    w.write("Explaination method: {}\n".format(args.explanation_method))
+    w.write("Explaination method: {}\n".format(args.explain_method))
     w.write("Baseline Activations\n")
     for datapoint in baseline_activations:
-        w.write(datapoint)
+        w.write(str(datapoint))
         w.write("\n")
 
     w.write("Modified Activations\n")
     for datapoint in modified_activations:
-        w.write(datapoint)
+        w.write(str(datapoint))
         w.write("\n")
 
     for metric_name, metric_value in zip(evaluation_names, evaluation_results):
