@@ -4,6 +4,8 @@ import seaborn as sns
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+import re
 
 def plot_subgraph(data,node_feature_mask,edge_mask):
     """Use networkx to visualize a subgraph based on a node feature mask and an edge mask
@@ -61,3 +63,35 @@ def plot_kmeans_clusters(kmeans, data):
     plt.ylabel('PC2')
     plt.legend()
     plt.show()
+
+def plot_metric(folder, dataset, metric):
+
+    explain_methods = ['gcexplainer', 'protgnn']
+    noise_methods = ['aggressive', 'conservative']
+    noise_amounts = [0.1, 0.3, 0.5, 0.8]
+
+    fig, ax = plt.subplots()
+    for explain_method in explain_methods:
+        for noise_method in noise_methods:
+            metrics = []
+            for noise_amount in noise_amounts:
+                file_name = f'{explain_method}_{dataset}_{noise_method}_{noise_amount}.txt'
+                file_path = os.path.join('results', file_name)
+                value = read_metric(file_path, metric)
+                metrics.append(value)
+            ax.plot(noise_amounts, metrics, label=f'{explain_method} and {noise_method}')
+
+    ax.legend()
+    ax.set_xlabel('Fraction')
+    ax.set_ylabel(metric)
+    ax.set_title(f'{metric} For Explainers and Noise Methods in {dataset}')
+    plt.show()
+
+def read_metric(file_path, metric):
+    with open(file_path, 'r') as f:
+        for line in f:
+            if metric in line:
+                words = line.split()
+                value = words[1]
+    return float(value)
+

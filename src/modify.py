@@ -86,10 +86,17 @@ def unimportant_nodes(data, name):
     Returns: Set of unimportant vertices
     """
 
-    if name == "BAShapes":
+    if name == "bashapes":
 
         #get indices of nodes of class 0 (nodes not in house motif)
         mask = data.y == 0
+        vertices = np.where(mask)[0].tolist()
+
+    if name == "bacommunity":
+        # get indices of nodes of class 0 or 4 (nodes not in house motif)
+        # (BA community is 2 BA shapes graphs appended)
+
+        mask = (data.y == 0) | (data.y == 4)
         vertices = np.where(mask)[0].tolist()
 
     if name == "TreeCycles":

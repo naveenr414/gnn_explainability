@@ -48,14 +48,15 @@ if __name__ == "__main__":
     explain_methods = ['gcexplainer', 'cdm', 'protgnn']
     noise_methods = ['aggressive','targeted','conservative']
     datasets = ['bashapes','bacommunity']
+    noise_amounts = [0.1, 0.3, 0.5, 0.8]
     
     parser = argparse.ArgumentParser(description='Evaluate a methodology for a particular dataset and noise method')
     parser.add_argument('--explain_method',type=str, choices=explain_methods,
                         help='Which explainability method to use; either gcexplainer, cdm, or protgnn')
     parser.add_argument('--noise_method', type=str, choices=noise_methods,
                         help='Which algorithm to use to generate noise: either aggressive, targeted, or conservative')
-    parser.add_argument('--noise_amount', type=float, choices=noise_amount,
-                        help='Which fraction of nodes to generate edges between: any fraction between 0 and 1')
+    parser.add_argument('--noise_amount', type=float, choices=noise_amounts,
+                        help='Which fraction of nodes to generate edges between: either 0.1, 0.3, 0.5 or 0.8')
     parser.add_argument('--dataset', type=str, choices=datasets,
                         help='Which dataset we\'re testing on; either bashapes or bacommunity')
     parser.add_argument('--model_location', type=str,
@@ -88,9 +89,9 @@ if __name__ == "__main__":
     explainer_class = explainer_class_dict[args.explain_method]
     
     baseline_activations = evaluate_model(model,dataset,explainer_class,args.output_location)
-    
+
     modification_dict = {'aggressive': lambda a: aggressive_adversary(a,args.noise_amount),
-                         'conservative': lambda a: conservative_adversary(a,args.noise_amount)}
+                         'conservative': lambda a: conservative_adversary(a, args.dataset, args.noise_amount)}
     modified_dataset = modification_dict[args.noise_method](dataset)
     modified_activations = evaluate_model(model,modified_dataset,explainer_class,args.output_location)
     
@@ -100,6 +101,7 @@ if __name__ == "__main__":
     
     w = open(args.output_location,"w")
     w.write("Modification Function: {}\n".format(args.noise_method))
+    w.write("Modification Noise Amount: {}\n".format(args.noise_amount))
     w.write("Dataset: {}\n".format(args.dataset))
     w.write("Explaination method: {}\n".format(args.explain_method))
     w.write("Baseline Activations\n")
