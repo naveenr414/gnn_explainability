@@ -124,6 +124,10 @@ class CDMExplainer(PrototypeExplainer):
         activation = torch.squeeze(self.activation_list).detach().numpy()
         explanations = explain_classes(model, concepts, data.y, data.train_mask, data.test_mask)
 
+        for i, point in enumerate(activation):
+            y[i]
+
+
         return explanations
 
 
@@ -162,7 +166,7 @@ def add_hook_model(model,layer_name):
     
     activations = []
     hook_handle = getattr(model,layer_name).register_forward_hook(get_activation_hook(activations))
-    
+
     return hook_handle, activations
 
 def cluster_activations(activations,num_clusters=4):
@@ -190,24 +194,17 @@ def explain_classes(model, concepts, y, train_mask, test_mask, max_minterm_compl
                     try_all=False):
     y = F.one_hot(y)
     y1h = F.one_hot(y[train_mask])
-    y1h_test = F.one_hot(y[test_mask])
+    #y1h_test = F.one_hot(y[test_mask])
 
     explanations = {}
 
     for class_id in range(y1h.shape[1]):
-        # explanation, _ = entropy.explain_class(model.lens, concepts.long().detach()[train_mask], y1h,
-        #                                       concepts.long().detach()[train_mask], y1h, target_class=class_id,
-        #                                       max_minterm_complexity=max_minterm_complexity,
-        #                                       topk_explanations=topk_explanations, try_all=try_all)
 
         explanation, _ = entropy.explain_class(model.lens, concepts.long().detach(), y,
                                                train_mask, test_mask, target_class=class_id,
                                                max_minterm_complexity=max_minterm_complexity,
                                                topk_explanations=topk_explanations, try_all=try_all)
 
-        print(explanation)
-        # explanation_accuracy, _ = test_explanation(explanation, concepts[test_mask], y1h_test, target_class=class_id)
-        print(len(y.shape))
         explanation_accuracy, _ = test_explanation(explanation, concepts, y, class_id, test_mask)
         explanation_complexity = complexity(explanation)
 

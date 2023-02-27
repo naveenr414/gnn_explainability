@@ -33,7 +33,7 @@ class GCN(torch.nn.Module):
         self.conv0 = GCNConv(num_features, dim)
         self.conv1 = GCNConv(dim, dim)
         self.conv2 = GCNConv(dim, dim)
-#        self.conv3 = GCNConv(dim, dim)
+        self.conv3 = GCNConv(dim, dim)
 
         # linear layers
         self.lens = torch.nn.Sequential(te.nn.EntropyLinear(dim, 1, n_classes=num_classes))
@@ -48,8 +48,8 @@ class GCN(torch.nn.Module):
         x = self.conv2(x, edge_index)
         x = F.leaky_relu(x)
 
-        #x = self.conv3(x, edge_index)
-        #x = F.leaky_relu(x)
+        x = self.conv3(x, edge_index)
+        x = F.leaky_relu(x)
 
         #         x = self.conv4(x, edge_index)
         #         x = F.leaky_relu(x)
@@ -136,24 +136,3 @@ def train_model(epochs,model,device,data,optimizer,test_function,get_outputs=lam
         
     return model
 
-
-global activation_list
-activation_list = {}
-
-def register_hooks(model):
-    for name, m in model.named_modules():
-            if isinstance(m, GCNConv):
-                m.register_forward_hook(get_activation(f"{name}"))
-
-    return model
-
-
-def get_activation(idx):
-    def hook(model, in_put, output):
-        if idx == "diff_pool":
-            ret_labels = ["pooled_node_feat_matrix", "coarse_adj", "link_pred_loss", "entropy_reg"]
-            for l, t in zip(ret_labels, output):
-                activation_list[f"{idx}_{l}"] = t.detach()
-        else:
-            activation_list[idx] = output.detach()
-    return hook

@@ -17,12 +17,13 @@ def fidelity_plus(pred, pred_new):
     return fidelity
 
 
-def sparsity(size_explain, size_total):
+def sparsity(size_important, size_total):
     """Metric to measure sparsity of explainer methods
         Arguments:
-            size_explain: size of important features/nodes of explainable method
+            size_important: size of important features/nodes of explainable method
             size_total: total size of original network
 
         Returns: metric int
         """
+
     pass

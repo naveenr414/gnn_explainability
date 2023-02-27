@@ -54,6 +54,8 @@ if __name__ == "__main__":
                         help='Which explainability method to use; either gcexplainer, cdm, or protgnn')
     parser.add_argument('--noise_method', type=str, choices=noise_methods,
                         help='Which algorithm to use to generate noise: either aggressive, targeted, or conservative')
+    parser.add_argument('--noise_amount', type=float, choices=noise_amount,
+                        help='Which fraction of nodes to generate edges between: any fraction between 0 and 1')
     parser.add_argument('--dataset', type=str, choices=datasets,
                         help='Which dataset we\'re testing on; either bashapes or bacommunity')
     parser.add_argument('--model_location', type=str,
@@ -87,7 +89,8 @@ if __name__ == "__main__":
     
     baseline_activations = evaluate_model(model,dataset,explainer_class,args.output_location)
     
-    modification_dict = {'aggressive': lambda a: aggressive_adversary(a,0.1)}
+    modification_dict = {'aggressive': lambda a: aggressive_adversary(a,args.noise_amount),
+                         'conservative': lambda a: conservative_adversary(a,args.noise_amount)}
     modified_dataset = modification_dict[args.noise_method](dataset)
     modified_activations = evaluate_model(model,modified_dataset,explainer_class,args.output_location)
     
