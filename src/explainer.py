@@ -124,10 +124,6 @@ class CDMExplainer(PrototypeExplainer):
         activation = torch.squeeze(self.activation_list).detach().numpy()
         explanations = explain_classes(model, concepts, data.y, data.train_mask, data.test_mask)
 
-        for i, point in enumerate(activation):
-            y[i]
-
-
         return explanations
 
 
