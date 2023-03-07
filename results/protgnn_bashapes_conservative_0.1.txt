@@ -1092,7 +1092,7 @@ Modified Activations
 14
 14
 14
-9
+14
 14
 14
 9
@@ -1126,7 +1126,7 @@ Modified Activations
 14
 14
 14
-14
+9
 9
 14
 14
@@ -1157,7 +1157,7 @@ Modified Activations
 9
 14
 9
-9
+14
 9
 9
 14
@@ -1178,7 +1178,7 @@ Modified Activations
 14
 9
 9
-9
+14
 9
 14
 14
@@ -1235,13 +1235,13 @@ Modified Activations
 9
 9
 9
-14
+9
 14
 14
 14
 9
 9
-14
+9
 9
 9
 9
@@ -1257,7 +1257,7 @@ Modified Activations
 9
 14
 9
-14
+9
 14
 9
 9
@@ -1266,7 +1266,7 @@ Modified Activations
 9
 9
 14
-14
+9
 9
 9
 9
@@ -1276,10 +1276,10 @@ Modified Activations
 9
 14
 9
-14
-14
 9
+14
 9
+14
 14
 9
 9
@@ -1298,7 +1298,7 @@ Modified Activations
 9
 9
 9
-9
+14
 9
 9
 14
@@ -1307,8 +1307,8 @@ Modified Activations
 9
 9
 9
-9
 14
+9
 9
 9
 9
@@ -1324,9 +1324,9 @@ Modified Activations
 14
 14
 9
-9
-9
+14
 9
+14
 9
 14
 14
@@ -1336,7 +1336,7 @@ Modified Activations
 9
 9
 9
-9
+14
 9
 9
 9
@@ -1344,7 +1344,7 @@ Modified Activations
 14
 14
 9
-9
+14
 9
 9
 9
@@ -1404,4 +1404,4 @@ Modified Activations
 9
 9
 14
-Fidelity: 0.05714285714285714
+fidelity_plus: 0.03571428571428571

@@ -81,7 +81,7 @@ if __name__ == "__main__":
         model = GCNNet_NC(num_features, num_classes, model_args)
     elif args.explain_method == 'cdm':
         model = GCN(num_features=num_features, dim=dim, num_classes=num_classes)
-        
+    print(model)
     model.load_state_dict(torch.load(args.model_location))
     
     # Baseline evaluation
@@ -96,8 +96,8 @@ if __name__ == "__main__":
     modified_activations = evaluate_model(model,modified_dataset,explainer_class,args.output_location)
     
     evaluation_metrics = {
-        'cdm': ['fidelity_plus', 'completeness', 'concepts'],
-        'gcex': ['fidelity_plus', 'completeness'],
+        'cdm': ['completeness', 'concepts'],
+        'gcexplainer': ['fidelity_plus', 'completeness'],
         'protgnn': ['fidelity_plus']
 
     }
@@ -107,11 +107,11 @@ if __name__ == "__main__":
     if 'fidelity_plus' in evaluation_metrics[args.explain_method]:
         evaluation_results.append(fidelity_plus(baseline_activations, modified_activations))
     if 'completeness' in evaluation_metrics[args.explain_method]:
-        evaluation_results.append(explainer_class.get_completeness(model, dataset))
+        evaluation_results.append(completeness(explainer_class, model, dataset))
     if 'concepts' in evaluation_metrics[args.explain_method]:
-        evaluation_results.append(explainer_class.get_concepts(model))
+        concepts(explainer_class, model, dataset, args.output_location)
 
-    w = open(args.output_location,"w")
+    w = open(f'results/{args.output_location}.txt',"w")
     w.write("Modification Function: {}\n".format(args.noise_method))
     w.write("Modification Noise Amount: {}\n".format(args.noise_amount))
     w.write("Dataset: {}\n".format(args.dataset))

@@ -1,3 +1,5 @@
+import pickle
+
 def fidelity_plus(pred, pred_new):
     """Metric calculation to measure explainer
      robustness to graph noise.
@@ -18,14 +20,39 @@ def fidelity_plus(pred, pred_new):
 
 
 def completeness(explainer_class, model, data):
-    """Metric to measure sparsity of explainer methods
+    """Metric to measure completeness (classifier accuracy)
         Arguments:
-            size_important: size of important features/nodes of explainable method
-            size_total: total size of original network
+            explainer_class
+            model
+            data
 
         Returns: metric int
         """
+    explainer = explainer_class()
 
-    completeness = explainer_class.get_completeness(model, data)
+    explainer.learn_prototypes(model, data)
+    
+    completeness = explainer.get_completeness(model, data)
 
     return completeness
+
+
+def concepts(explainer_class, model, data, output_location):
+    """Metric to return concepts
+        Arguments:
+            explainer_class
+            model
+            data
+
+        Returns: concepts vector
+        """
+    explainer = explainer_class()
+
+    concepts = explainer.get_concepts(model, data)
+
+    #pkl concepts because need to loop through
+    #aggressive/conservative/noise combinations
+    #and calculate difference of concept vectors
+
+    with open(f'results/concepts/{output_location}.pkl', 'wb') as f:
+        pickle.dump(concepts, f)

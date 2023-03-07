@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import re
+import pickle
 
 def plot_subgraph(data,node_feature_mask,edge_mask):
     """Use networkx to visualize a subgraph based on a node feature mask and an edge mask
@@ -65,8 +66,19 @@ def plot_kmeans_clusters(kmeans, data):
     plt.show()
 
 def plot_metric(folder, dataset, metric):
+    """Line plots for each explainer + noise method (aggressive/conservative)
 
-    explain_methods = ['gcexplainer', 'protgnn']
+        Arguments:
+            Data: PyTorch data object
+            metric: string - 'completeness' or 'fidelity_plus'
+            folder: string - location of text files
+
+        Returns: Nothing
+
+        Side Effects: Plots the graph
+        """
+
+    explain_methods = ['gcexplainer', 'protgnn', 'cdm']
     noise_methods = ['aggressive', 'conservative']
     noise_amounts = [0.1, 0.3, 0.5, 0.8]
 
@@ -76,15 +88,18 @@ def plot_metric(folder, dataset, metric):
             metrics = []
             for noise_amount in noise_amounts:
                 file_name = f'{explain_method}_{dataset}_{noise_method}_{noise_amount}.txt'
-                file_path = os.path.join('results', file_name)
+                file_path = os.path.join(folder, file_name)
                 value = read_metric(file_path, metric)
                 metrics.append(value)
-            ax.plot(noise_amounts, metrics, label=f'{explain_method} and {noise_method}')
+            #if the metric exists in the file
+            if metrics[0] is not None:
+                ax.plot(noise_amounts, metrics, label=f'{explain_method} and {noise_method}')
 
     ax.legend()
     ax.set_xlabel('Fraction')
     ax.set_ylabel(metric)
     ax.set_title(f'{metric} For Explainers and Noise Methods in {dataset}')
+    plt.savefig('test.png')
     plt.show()
 
 def read_metric(file_path, metric):
@@ -93,5 +108,67 @@ def read_metric(file_path, metric):
             if metric in line:
                 words = line.split()
                 value = words[1]
-    return float(value)
+    try:
+        return float(value)
+    except:
+        return
 
+
+def plot_difference_metric(folder, dataset, metric):
+    """Line plots for each explainer.
+     Takes the difference of metrics for aggressive/conservative noise
+
+        Arguments:
+            Data: PyTorch data object
+            metric: string - 'concepts'
+            folder: string - location of text files
+
+        Returns: Nothing
+
+        Side Effects: Plots the graph
+        """
+
+    explain_methods = ['cdm']
+    noise_methods = ['aggressive', 'conservative']
+    noise_amounts = [0.1, 0.3, 0.5, 0.8]
+
+    aggressive = []
+    conservative = []
+
+    fig, ax = plt.subplots()
+    for explain_method in explain_methods:
+        for noise_method in noise_methods:
+            metrics = []
+            for noise_amount in noise_amounts:
+                file_name = f'{explain_method}_{dataset}_{noise_method}_{noise_amount}.pkl'
+                file_path = os.path.join(folder, file_name)
+
+                with open(file_path, 'rb') as f:
+                    concepts = pickle.load(f)
+
+                if noise_method == 'aggressive':
+                    aggressive.append(concepts)
+                elif noise_method == 'conservative':
+                    conservative.append(concepts)
+
+    # calcualte difference between conservative and
+    # aggressive concepts
+    avg_lst = []
+
+    for i in range(len(aggressive)):
+        difference = aggressive[i].detach().numpy() - conservative[i].detach().numpy()
+        avg = np.mean(difference)
+        avg_lst.append(avg)
+
+    #Plot
+    ax.plot(noise_amounts, avg_lst, label=f'{explain_method} and {noise_method}')
+
+    ax.legend()
+    ax.set_xlabel('Fraction')
+    ax.set_ylabel('Avg difference in concept vectors')
+    ax.set_title('Avg difference in concept vectors for CDM')
+    plt.savefig('test.png')
+    plt.show()
+
+
+plot_difference_metric('results/concepts', 'bashapes', 'concepts')

@@ -174,12 +174,13 @@ class CDMExplainer(PrototypeExplainer):
         return concepts
 
     def get_prediction(self, model, data):
-        concepts = self.get_concepts(model, data)
+        concepts, _ = model(data.x, data.edge_index)
         explanations = explain_classes(model, concepts, data.y, data.train_mask, data.test_mask)
 
         return explanations
+
     def get_completeness(self, model, data):
-        concepts = self.get_concepts(model, data)
+        concepts, _ = model(data.x, data.edge_index)
         activation = torch.squeeze(self.activation_list).detach().numpy()
         _, _, used_centroid_labels = find_centroids(activation, concepts, data.y)
         completeness = completeness_score(data.y, used_centroid_labels)

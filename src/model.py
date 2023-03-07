@@ -30,6 +30,10 @@ class GCN(torch.nn.Module):
     def __init__(self, num_features, dim, num_classes):
         super(GCN, self).__init__()
 
+        self.num_features = num_features
+        self.dim = dim
+        self.num_classes = num_classes
+        
         self.conv0 = GCNConv(num_features, dim)
         self.conv1 = GCNConv(dim, dim)
         self.conv2 = GCNConv(dim, dim)
@@ -68,6 +72,7 @@ class GCN(torch.nn.Module):
 
 
         return concepts, log_probs
+
 
 def test_model(model, data,get_outputs=lambda a: a):
     """Helper function for model training, which takes in a model and data, and evaluates it

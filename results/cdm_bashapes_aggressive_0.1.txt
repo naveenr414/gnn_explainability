@@ -1,0 +1,15 @@
+Modification Function: aggressive
+Modification Noise Amount: 0.1
+Dataset: bashapes
+Explaination method: cdm
+Baseline Activations
+0
+1
+2
+3
+Modified Activations
+0
+1
+2
+3
+completeness: 0.2820059330415936
