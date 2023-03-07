@@ -17,7 +17,7 @@ def fidelity_plus(pred, pred_new):
     return fidelity
 
 
-def sparsity(size_important, size_total):
+def completeness(explainer_class, model, data):
     """Metric to measure sparsity of explainer methods
         Arguments:
             size_important: size of important features/nodes of explainable method
@@ -26,4 +26,6 @@ def sparsity(size_important, size_total):
         Returns: metric int
         """
 
-    pass
+    completeness = explainer_class.get_completeness(model, data)
+
+    return completeness

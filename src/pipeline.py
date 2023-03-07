@@ -95,10 +95,22 @@ if __name__ == "__main__":
     modified_dataset = modification_dict[args.noise_method](dataset)
     modified_activations = evaluate_model(model,modified_dataset,explainer_class,args.output_location)
     
-    evaluation_metrics = [fidelity_plus]
-    evaluation_names = ["Fidelity"]
-    evaluation_results = [func(baseline_activations,modified_activations) for func in evaluation_metrics]
-    
+    evaluation_metrics = {
+        'cdm': ['fidelity_plus', 'completeness', 'concepts'],
+        'gcex': ['fidelity_plus', 'completeness'],
+        'protgnn': ['fidelity_plus']
+
+    }
+    evaluation_names = []
+    evaluation_results = []
+
+    if 'fidelity_plus' in evaluation_metrics[args.explain_method]:
+        evaluation_results.append(fidelity_plus(baseline_activations, modified_activations))
+    if 'completeness' in evaluation_metrics[args.explain_method]:
+        evaluation_results.append(explainer_class.get_completeness(model, dataset))
+    if 'concepts' in evaluation_metrics[args.explain_method]:
+        evaluation_results.append(explainer_class.get_concepts(model))
+
     w = open(args.output_location,"w")
     w.write("Modification Function: {}\n".format(args.noise_method))
     w.write("Modification Noise Amount: {}\n".format(args.noise_amount))
@@ -114,7 +126,7 @@ if __name__ == "__main__":
         w.write(str(datapoint))
         w.write("\n")
 
-    for metric_name, metric_value in zip(evaluation_names, evaluation_results):
+    for metric_name, metric_value in zip(evaluation_metrics[args.explain_method], evaluation_results):
         w.write("{}: {}\n".format(metric_name,metric_value))
         
     w.close()
