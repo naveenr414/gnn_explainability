@@ -170,5 +170,5 @@ def plot_difference_metric(folder, dataset, metric):
     plt.savefig('test.png')
     plt.show()
 
-
-plot_difference_metric('results/concepts', 'bashapes', 'concepts')
+if __name__ == "__main__":
+    plot_difference_metric('results/concepts', 'bashapes', 'concepts')

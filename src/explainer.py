@@ -56,7 +56,7 @@ class GCExplainer(PrototypeExplainer):
         centers = kmeans.cluster_centers_
         self.prototypes = centers
         
-    def get_prediction(self,model,data, test=True):
+    def get_prediction(self,model,data, test=True,get_activations=False):
         """Identify which cluster one data point (or multiple) belongs to
         
         Arguments: 
@@ -86,6 +86,9 @@ class GCExplainer(PrototypeExplainer):
             closest_center_index = pairwise_distances_argmin(X=[new_point], Y=self.prototypes)
             clusters.append(closest_center_index)
 
+        if get_activations:
+            return activations, np.array(clusters).flatten()
+            
         return np.array(clusters).flatten()
 
     def get_completeness(self, model, data, classifier_type='decision_tree'):
