@@ -25,6 +25,19 @@ class Net(torch.nn.Module):
         x = self.linear(x)
         return F.log_softmax(x, dim=1)
 
+class NetSmall(torch.nn.Module):
+    def __init__(self, num_features, dim=16, num_classes=1):
+        super(NetSmall, self).__init__()
+        self.conv1 = GCNConv(num_features, dim,bias=False)
+        self.conv2 = GCNConv(dim, dim,bias=False)
+        self.linear = Linear(dim,num_classes,bias=False)
+
+    def forward(self, x, edge_index, data=None):
+        x = F.relu(self.conv1(x, edge_index))
+        x = F.relu(self.conv2(x,edge_index))
+        x = self.linear(x)
+        return F.log_softmax(x, dim=1)
+
 
 class GCN(torch.nn.Module):
     def __init__(self, num_features, dim, num_classes):

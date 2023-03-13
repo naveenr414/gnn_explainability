@@ -22,7 +22,7 @@ class PrototypeExplainer:
         pass
     
 class GCExplainer(PrototypeExplainer):
-    def __init__(self,layer_name="conv2",num_clusters=4):
+    def __init__(self,layer_name="conv3",num_clusters=4):
         self.layer_name = layer_name
         self.num_clusters=num_clusters
         self.initial_activations = []
