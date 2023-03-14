@@ -33,13 +33,14 @@ def get_adjacency_power(adjacency,degree,power,row,three_hop_nodes):
     
     num_nodes = len(adjacency)
     dist = [adjacency[row,i]*degree[row,row]*degree[i,i] for i in range(num_nodes)]
-    
+        
     for i in range(power-1):
         new_dist = deepcopy(dist)
         
         for j in three_hop_nodes:
-            new_dist[j] = sum([adjacency[i,j]*dist[i]*degree[i,i]*degree[j,j] for i in three_hop_nodes])
             
+            new_dist[j] = sum([adjacency[i,j]*dist[i]*degree[i,i]*degree[j,j] for i in three_hop_nodes])
+                        
         dist = new_dist
         
     return np.array(dist)
@@ -159,7 +160,7 @@ def to_unit_vector(v):
     return v/np.linalg.norm(v)
 
 def targeted_attack(dataset,gce_explainer,model,targeted_node,budget,
-                   score_function, target_direction_function):
+                   score_function, allowable_nodes, debug=False):
     """Targeted attack on GNN based on a budget, 
         Based on https://arxiv.org/abs/1805.07984
         
@@ -204,53 +205,49 @@ def targeted_attack(dataset,gce_explainer,model,targeted_node,budget,
         AXW = compute_AXW(A_hat,X,W,num_gcn_layers)
         current_location = AXW[targeted_node]
         distances = get_kmeans_distances(kmeans_centers,current_location)
-        print("Distances {}".format(distances))
         current_prediction = np.argmin(distances)
         
         if current_prediction != initial_prediction:
             break
         
-        target_direction = target_direction_function(kmeans_centers,
-                                                  current_location)
-        
         visitable_nodes = get_n_hop(A_squiggle,targeted_node,num_gcn_layers)
+                
+        editable_nodes = list(set(allowable_nodes).intersection(set(visitable_nodes)))
+                        
         modifications = []
         
         # Try modifyng each node feature
-        for X_i in range(num_nodes):
+        for X_i in allowable_nodes:
             for X_j in range(node_features):
-                X_change = 1 if X[X_i,X_j]<1 else -1
+                X_change = 1 if X[X_i,X_j]<1 else 0
                 change_direction = recompute_multiplication_X(AXW,A_hat_pow,X,W,X_change,X_i,X_j,targeted_node)
                 score = score_function(change_direction+current_location,kmeans_centers,current_prediction)            
                 modifications.append((score,"X",X_i,X_j,X_change))
                                     
-        for j in visitable_nodes:
-            for k in visitable_nodes:
+        for j in editable_nodes:
+            for k in editable_nodes:
                 if j<=k:
                     continue
                     
                 new_A_squiggle = copy(A_squiggle)
                 new_A_squiggle[j,k] = 1-new_A_squiggle[j,k] 
+                new_D_half = compute_D_half(new_A_squiggle)
+                new_A_hat_pow = get_adjacency_power(new_A_squiggle,new_D_half,num_gcn_layers,targeted_node,
+                                                   get_n_hop(new_A_squiggle,targeted_node,num_gcn_layers))
+                predicted_location = new_A_hat_pow.dot(XW)
                 
-                # TODO: Fix the re-computation of A
-                """new_A_hat_pow = get_adjacency_power(new_A_squiggle,D_half,num_gcn_layers,targeted_node,visitable_nodes)
-                differences = new_A_hat_pow - A_hat_pow
-                diff_vector = np.zeros(len(target_direction))
-                
-                non_zero_indices = np.nonzero(differences[targeted_node])[0]
-                A_i = targeted_node
-                                
-                for A_j in non_zero_indices:
-                    A_change = differences[A_i,A_j]
-                    diff_vector += recompute_multiplication_A(AXW,XW,A_change,A_i,A_j,targeted_node)"""
-                
-                AXW = compute_AXW(compute_A_hat(new_A_squiggle),X,W,num_gcn_layers)
-                                        
-                score = score_function(AXW[targeted_node],kmeans_centers,current_prediction)
+                if debug:
+                    real_A_hat = compute_A_hat(new_A_squiggle)
+                    real_A_hat_pow = np.linalg.matrix_power(real_A_hat,num_gcn_layers)
+                    real_location = compute_AXW(real_A_hat,X,W,num_gcn_layers)[targeted_node]
+                    where_not_close = np.where(np.abs(real_A_hat_pow[targeted_node]-new_A_hat_pow)>.001)[0]
+                    
+                    return A_squiggle, j, k
+                                                                    
+                score = score_function(predicted_location,kmeans_centers,current_prediction)
                 modifications.append((score,"A",j,k,new_A_squiggle[j,k]))
-        
+                        
         max_score = max(modifications,key=lambda k: k[0])
-        print("Max score {}".format(max_score))
         changes.append(max_score[1:])
         if max_score[1] == "A":
             A_squiggle[max_score[2]][max_score[3]] = max_score[4]

@@ -18,6 +18,18 @@ def compute_AXW(A_hat,X,W,L):
     A_pow = np.linalg.matrix_power(A_hat,L)
     return A_pow.dot(X).dot(W)
 
+def close_matrices(x,y):
+    """Determine if two vectors or matrices are essentially the same
+    
+    Arguments:
+        x: Numpy array/matrix
+        y: Numpy array/matrix
+
+    Returns: Boolean, whether the two arguments are close together
+    """
+    
+    return np.linalg.norm(x-y)<10**-4
+
 def compute_W(model):
     """For a model, compute the product of the weight matrices for all conv layers
     
@@ -102,23 +114,38 @@ def get_n_hop(A,node_idx,n_hop):
     Returns: List of n_hop neighbors
     """
     
-    visited = [False] * len(A)
-    queue = deque([(node_idx, 0)])
-    nodes_within_n_hop = []
+    all_nodes = set([node_idx])
+    current_hop = set([node_idx])
     
-    while queue:
-        curr_node, curr_hop = queue.popleft()
-        visited[curr_node] = True
+    for i in range(n_hop):
+        new_hops = set()
         
-        if curr_hop <= n_hop:
-            nodes_within_n_hop.append(curr_node)
-        
-        if curr_hop < n_hop:
-            for neighbor, is_adjacent in enumerate(A[curr_node]):
-                if is_adjacent and not visited[neighbor]:
-                    queue.append((neighbor, curr_hop+1))
+        for explore_node in current_hop:
+            for neighbor in np.where(A[explore_node])[0]:
+                if neighbor not in current_hop and neighbor not in all_nodes and neighbor not in new_hops:
+                    new_hops.add(neighbor)
+                    
+        all_nodes = all_nodes.union(current_hop)
+        current_hop = new_hops
     
-    return nodes_within_n_hop
+#     visited = [False] * len(A)
+#     queue = deque([(node_idx, 0)])
+#     nodes_within_n_hop = []
+    
+#     while queue:
+#         curr_node, curr_hop = queue.popleft()
+#         visited[curr_node] = True
+        
+#         if curr_hop <= n_hop:
+#             nodes_within_n_hop.append(curr_node)
+        
+#         if curr_hop < n_hop:
+#             for neighbor, is_adjacent in enumerate(A[curr_node]):
+#                 if is_adjacent and not visited[neighbor]:
+#                     queue.append((neighbor, curr_hop+1))
+    
+    all_nodes = all_nodes.union(new_hops)
+    return list(all_nodes)
     
 def get_kmeans_distances(centers,point):
     """Find the distances to each point from KMeans centers
