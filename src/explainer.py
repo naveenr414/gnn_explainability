@@ -55,7 +55,7 @@ class GCExplainer(PrototypeExplainer):
         
         centers = kmeans.cluster_centers_
         self.prototypes = centers
-        
+
     def get_prediction(self,model,data, test=True,get_activations=False):
         """Identify which cluster one data point (or multiple) belongs to
         
@@ -143,6 +143,11 @@ class ProtGNNExplainer(PrototypeExplainer):
         min_distances = prediction[3].detach().cpu().numpy()
         
         return np.argmin(min_distances,axis=1)
+    def get_prototype_probs(self, model, data):
+        prediction = model(data.x, data.edge_index)
+        prototype_probs = prediction[4].detach().cpu().numpy()
+
+        return prototype_probs
 
 
 class CDMExplainer(PrototypeExplainer):

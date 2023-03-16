@@ -56,3 +56,24 @@ def concepts(explainer_class, model, data, output_location):
 
     with open(f'results/concepts/{output_location}.pkl', 'wb') as f:
         pickle.dump(concepts, f)
+
+
+def prototype_probs(explainer_class, model, data, output_location):
+    """Metric to return prototype probabilities
+        Arguments:
+            explainer_class
+            model
+            data
+
+        Returns: concepts vector
+        """
+    explainer = explainer_class()
+
+    prototype_probs = explainer.get_prototype_probs(model, data)
+
+    #pkl concepts because need to loop through
+    #aggressive/conservative/noise combinations
+    #and calculate difference of prototype_probs
+
+    with open(f'results/prototype_probs/{output_location}.pkl', 'wb') as f:
+        pickle.dump(prototype_probs, f)

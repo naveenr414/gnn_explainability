@@ -43,13 +43,40 @@ def evaluate_model(model, dataset, explainer_class, output_location):
     predictions = explainer.get_prediction(model,dataset)
     
     return predictions
-    
+
+
+def evaluate_model_fixed_kmeans(model, dataset, modified_dataset, explainer_class, output_location):
+    """Evaluate an explainability method by computing results after running over the test-portion of a dataset
+
+    Arguments:
+        model: Some PyTorch geometric model
+        dataset: PyTorch Geometric dataset, such as BAShapes
+        modified_dataset: PyTorch Geometric dataset, with noise
+        explanation_method: Some explanation method such as GCExplainer;
+            An object from the explainer class that has
+            learn_prototypes and get_explaination functions
+        output_location: File to which we write our outputs
+
+    Returns: Explaination results
+    """
+
+    explainer = explainer_class()
+
+    #learn kmeans clusters on clean data
+    explainer.learn_prototypes(model, dataset)
+
+    #make predictions on the noisy data with the fixed kmeans clusters
+    predictions = explainer.get_prediction(model, modified_dataset)
+
+    return predictions
+
+
 if __name__ == "__main__":
     explain_methods = ['gcexplainer', 'cdm', 'protgnn']
     noise_methods = ['aggressive','targeted','conservative']
     datasets = ['bashapes','bacommunity']
-    noise_amounts = [0.1, 0.3, 0.5, 0.8]
-    
+    noise_amounts = [0.0, 0.1, 0.3, 0.5, 0.8]
+
     parser = argparse.ArgumentParser(description='Evaluate a methodology for a particular dataset and noise method')
     parser.add_argument('--explain_method',type=str, choices=explain_methods,
                         help='Which explainability method to use; either gcexplainer, cdm, or protgnn')
@@ -81,7 +108,7 @@ if __name__ == "__main__":
         model = GCNNet_NC(num_features, num_classes, model_args)
     elif args.explain_method == 'cdm':
         model = GCN(num_features=num_features, dim=dim, num_classes=num_classes)
-    print(model)
+
     model.load_state_dict(torch.load(args.model_location))
     
     # Baseline evaluation
@@ -93,12 +120,16 @@ if __name__ == "__main__":
     modification_dict = {'aggressive': lambda a: aggressive_adversary(a,args.noise_amount),
                          'conservative': lambda a: conservative_adversary(a, args.dataset, args.noise_amount)}
     modified_dataset = modification_dict[args.noise_method](dataset)
-    modified_activations = evaluate_model(model,modified_dataset,explainer_class,args.output_location)
+
+    if k_means == 'fixed':
+        modified_activations = evaluate_model_fixed_kmeans(model, dataset, modified_dataset, explainer_class, output_location)
+    else:
+        modified_activations = evaluate_model(model,modified_dataset,explainer_class,args.output_location)
     
     evaluation_metrics = {
         'cdm': ['completeness', 'concepts'],
         'gcexplainer': ['fidelity_plus', 'completeness'],
-        'protgnn': ['fidelity_plus']
+        'protgnn': ['fidelity_plus', 'prototype_probs']
 
     }
     evaluation_names = []
@@ -110,6 +141,8 @@ if __name__ == "__main__":
         evaluation_results.append(completeness(explainer_class, model, dataset))
     if 'concepts' in evaluation_metrics[args.explain_method]:
         concepts(explainer_class, model, dataset, args.output_location)
+    if 'prototype_probs' in evaluation_metrics[args.explain_method]:
+        prototype_probs(explainer_class, model, dataset, args.output_location)
 
     w = open(f'results/{args.output_location}.txt',"w")
     w.write("Modification Function: {}\n".format(args.noise_method))

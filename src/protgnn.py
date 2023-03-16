@@ -150,10 +150,15 @@ class GCNNet_NC(nn.Module):
 
         if self.enable_prot:
             prototype_activations, min_distances = self.prototype_distances(x)
+
+            #getting the prototype probabilities
+            prototype_probs = self.Softmax(prototype_activations)
+            prototype_probs = torch.log(prototype_probs)
+
             logits = self.last_layer(prototype_activations)
             probs = self.Softmax(logits)
             probs = torch.log(probs)
-            return logits, probs, emb, min_distances
+            return logits, probs, emb, min_distances, prototype_probs
         else:
             for i in range(self.num_mlp_layers - 1):
                 x = self.mlps[i](x)

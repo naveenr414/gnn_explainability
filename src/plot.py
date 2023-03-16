@@ -172,3 +172,4 @@ def plot_difference_metric(folder, dataset, metric):
 
 if __name__ == "__main__":
     plot_difference_metric('results/concepts', 'bashapes', 'concepts')
+    #plot_difference_metric('results/prototype_probs', 'bashapes', 'prototype_probs')
