@@ -80,26 +80,40 @@ def plot_metric(folder, dataset, metric):
 
     explain_methods = ['gcexplainer', 'protgnn', 'cdm']
     noise_methods = ['aggressive', 'conservative']
-    noise_amounts = [0.1, 0.3, 0.5, 0.8]
+    noise_amounts = [0.0, 0.1, 0.3, 0.5, 0.8]
 
     fig, ax = plt.subplots()
     for explain_method in explain_methods:
-        for noise_method in noise_methods:
-            metrics = []
-            for noise_amount in noise_amounts:
-                file_name = f'{explain_method}_{dataset}_{noise_method}_{noise_amount}.txt'
-                file_path = os.path.join(folder, file_name)
-                value = read_metric(file_path, metric)
-                metrics.append(value)
-            #if the metric exists in the file
-            if metrics[0] is not None:
-                ax.plot(noise_amounts, metrics, label=f'{explain_method} and {noise_method}')
+        if explain_method == 'gcexplainer':
+            for k_means in ['fixed', 'varied']:
+                for noise_method in noise_methods:
+                    metrics = []
+                    for noise_amount in noise_amounts:
+                        file_name = f'{explain_method}_{dataset}_{noise_method}_{noise_amount}_{k_means}.txt'
+                        file_path = os.path.join(folder, file_name)
+                        value = read_metric(file_path, metric)
+                        metrics.append(value)
+                    #if the metric exists in the file
+                    if metrics[0] is not None:
+                        ax.plot(noise_amounts, metrics, label=f'{explain_method} and {noise_method} and {k_means}')
 
-    ax.legend()
+        else:
+            for noise_method in noise_methods:
+                metrics = []
+                for noise_amount in noise_amounts:
+                    file_name = f'{explain_method}_{dataset}_{noise_method}_{noise_amount}.txt'
+                    file_path = os.path.join(folder, file_name)
+                    value = read_metric(file_path, metric)
+                    metrics.append(value)
+                # if the metric exists in the file
+                if metrics[0] is not None:
+                    ax.plot(noise_amounts, metrics, label=f'{explain_method} and {noise_method}')
+
+    plt.legend(bbox_to_anchor=(1.04, 1), loc="upper left")
     ax.set_xlabel('Fraction')
     ax.set_ylabel(metric)
     ax.set_title(f'{metric} For Explainers and Noise Methods in {dataset}')
-    plt.savefig('test.png')
+    plt.savefig(f'plots/{dataset}_{metric}.png', bbox_inches="tight")
     plt.show()
 
 def read_metric(file_path, metric):
@@ -128,48 +142,101 @@ def plot_difference_metric(folder, dataset, metric):
         Side Effects: Plots the graph
         """
 
-    explain_methods = ['cdm']
+    if metric == 'concepts':
+        explain_method = 'cdm'
+        title = 'Avg difference in concept vectors for CDM'
+        y_lab = 'Avg difference in concept vectors'
+
+    elif metric == 'prototype_probs':
+        explain_method = 'protgnn'
+        title = 'Avg difference in prototype probabilities'
+        y_lab = 'Avg difference in prototype probabilities'
+
     noise_methods = ['aggressive', 'conservative']
-    noise_amounts = [0.1, 0.3, 0.5, 0.8]
+    noise_amounts = [0.0, 0.1, 0.3, 0.5, 0.8]
 
     aggressive = []
     conservative = []
 
     fig, ax = plt.subplots()
-    for explain_method in explain_methods:
-        for noise_method in noise_methods:
-            metrics = []
-            for noise_amount in noise_amounts:
-                file_name = f'{explain_method}_{dataset}_{noise_method}_{noise_amount}.pkl'
-                file_path = os.path.join(folder, file_name)
+    for noise_method in noise_methods:
+        metrics = []
+        for noise_amount in noise_amounts:
+            file_name = f'{explain_method}_{dataset}_{noise_method}_{noise_amount}.pkl'
+            file_path = os.path.join(folder, file_name)
 
-                with open(file_path, 'rb') as f:
-                    concepts = pickle.load(f)
+            with open(file_path, 'rb') as f:
+                concepts = pickle.load(f)
 
-                if noise_method == 'aggressive':
-                    aggressive.append(concepts)
-                elif noise_method == 'conservative':
-                    conservative.append(concepts)
+            if noise_method == 'aggressive':
+                aggressive.append(concepts)
+            elif noise_method == 'conservative':
+                conservative.append(concepts)
 
     # calcualte difference between conservative and
     # aggressive concepts
     avg_lst = []
 
     for i in range(len(aggressive)):
-        difference = aggressive[i].detach().numpy() - conservative[i].detach().numpy()
+        try:
+            difference = aggressive[i].detach().numpy() - conservative[i].detach().numpy()
+        except: #prototype probs
+            difference = aggressive[i] - conservative[i]
+
         avg = np.mean(difference)
         avg_lst.append(avg)
 
     #Plot
     ax.plot(noise_amounts, avg_lst, label=f'{explain_method} and {noise_method}')
 
-    ax.legend()
     ax.set_xlabel('Fraction')
-    ax.set_ylabel('Avg difference in concept vectors')
-    ax.set_title('Avg difference in concept vectors for CDM')
-    plt.savefig('test.png')
+    ax.set_ylabel(y_lab)
+    ax.set_title(title)
+    plt.savefig(f'plots/{explain_method}_{dataset}.png')
     plt.show()
 
+def plot_changing_nodes(folder, dataset):
+
+    explain_methods = ['gcexplainer']
+    noise_methods = ['aggressive', 'conservative']
+    noise_amounts = [0.0, 0.1, 0.3, 0.5, 0.8]
+    fig, ax = plt.subplots()
+
+    for explain_method in explain_methods:
+        for noise_method in noise_methods:
+            num_changes_lst = []
+            for noise_amount in noise_amounts:
+                file_name = f'{explain_method}_{dataset}_{noise_method}_{noise_amount}_fixed.txt'
+                file_path = os.path.join(folder, file_name)
+
+                # Open the file for reading
+                with open(file_path, "r") as f:
+                    # Read the entire file into a list of strings
+                    lines = f.readlines()
+
+                # Find the index of the line that separates the two sections
+                separator_index = lines.index("Modified Activations\n")
+
+                # Extract the values from each section into separate lists
+                baseline_values = [int(x) for x in lines[5:separator_index]]
+                modified_values = [int(x) for x in lines[separator_index + 1:-2]]
+
+                # Count the number of values that have changed
+                num_changes = sum([1 for i in range(len(baseline_values)) if baseline_values[i] != modified_values[i]])
+                num_changes_lst.append(num_changes)
+
+            ax.plot(noise_amounts, num_changes_lst, label=f'{explain_method} and {noise_method}')
+
+    ax.legend()
+    ax.set_xlabel('Fraction')
+    ax.set_ylabel('Number of Changes')
+    ax.set_title('Number of changes with fixed kmeans - GCExplainer')
+    plt.savefig(f'plots/{explain_method}_{dataset}_num_changes.png')
+    plt.show()
+
+
 if __name__ == "__main__":
+    plot_metric('results', 'bashapes', 'completeness')
+    plot_changing_nodes('results', 'bashapes')
     plot_difference_metric('results/concepts', 'bashapes', 'concepts')
-    #plot_difference_metric('results/prototype_probs', 'bashapes', 'prototype_probs')
+    plot_difference_metric('results/prototype_probs', 'bashapes', 'prototype_probs')

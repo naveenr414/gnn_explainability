@@ -76,6 +76,7 @@ if __name__ == "__main__":
     noise_methods = ['aggressive','targeted','conservative']
     datasets = ['bashapes','bacommunity']
     noise_amounts = [0.0, 0.1, 0.3, 0.5, 0.8]
+    k_means = ['fixed', 'varied']
 
     parser = argparse.ArgumentParser(description='Evaluate a methodology for a particular dataset and noise method')
     parser.add_argument('--explain_method',type=str, choices=explain_methods,
@@ -125,7 +126,7 @@ if __name__ == "__main__":
         modified_activations = evaluate_model_fixed_kmeans(model, dataset, modified_dataset, explainer_class, output_location)
     else:
         modified_activations = evaluate_model(model,modified_dataset,explainer_class,args.output_location)
-    
+
     evaluation_metrics = {
         'cdm': ['completeness', 'concepts'],
         'gcexplainer': ['fidelity_plus', 'completeness'],
@@ -138,11 +139,11 @@ if __name__ == "__main__":
     if 'fidelity_plus' in evaluation_metrics[args.explain_method]:
         evaluation_results.append(fidelity_plus(baseline_activations, modified_activations))
     if 'completeness' in evaluation_metrics[args.explain_method]:
-        evaluation_results.append(completeness(explainer_class, model, dataset))
+        evaluation_results.append(completeness(explainer_class, model, modified_dataset))
     if 'concepts' in evaluation_metrics[args.explain_method]:
-        concepts(explainer_class, model, dataset, args.output_location)
+        concepts(explainer_class, model, modified_dataset, args.output_location)
     if 'prototype_probs' in evaluation_metrics[args.explain_method]:
-        prototype_probs(explainer_class, model, dataset, args.output_location)
+        prototype_probs(explainer_class, model, modified_dataset, args.output_location)
 
     w = open(f'results/{args.output_location}.txt',"w")
     w.write("Modification Function: {}\n".format(args.noise_method))

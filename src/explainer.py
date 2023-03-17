@@ -136,8 +136,7 @@ class ProtGNNExplainer(PrototypeExplainer):
     
     def learn_prototypes(self,model,data):
         self.prototypes = model.prototype_vectors
-        print(self.prototypes)
-        
+
     def get_prediction(self,model,data):
         prediction = model(data.x,data.edge_index)
         min_distances = prediction[3].detach().cpu().numpy()

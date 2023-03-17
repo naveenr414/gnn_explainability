@@ -271,18 +271,20 @@ def aggressive_adversary(data, frac):
 
     Returns: PyTorch dataset, modified
     """
-    vertices = set(torch.flatten(data.edge_index).tolist())
+    if frac != 0.0:
 
-    frac_nodes = random.sample(vertices, int(len(vertices) * frac))
+        vertices = set(torch.flatten(data.edge_index).tolist())
 
-    # loop through nodes and randomly generate edge with prob = 0.1
-    for i, node_i in enumerate(frac_nodes):
-        for j, node_j in enumerate(frac_nodes):
+        frac_nodes = random.sample(vertices, int(len(vertices) * frac))
 
-            if i < j and random.random() < 0.1:
-                data.edge_index = np.append(data.edge_index, [[node_i], [node_j]], axis=1)
+        # loop through nodes and randomly generate edge with prob = 0.1
+        for i, node_i in enumerate(frac_nodes):
+            for j, node_j in enumerate(frac_nodes):
 
-    data.edge_index = torch.Tensor(data.edge_index).long()
+                if i < j and random.random() < 0.1:
+                    data.edge_index = np.append(data.edge_index, [[node_i], [node_j]], axis=1)
+
+        data.edge_index = torch.Tensor(data.edge_index).long()
 
     return data
 
@@ -303,18 +305,19 @@ def conservative_adversary(data, name, frac):
     Returns: PyTorch dataset, modified
     """
 
-    vertices = unimportant_nodes(data, name)
+    if frac != 0.0:
+        vertices = unimportant_nodes(data, name)
 
-    frac_nodes = random.sample(vertices, int(len(vertices) * frac))
+        frac_nodes = random.sample(vertices, int(len(vertices) * frac))
 
-    # loop through nodes and randomly generate edge with prob = 0.1
-    for i, node_i in enumerate(frac_nodes):
-        for j, node_j in enumerate(frac_nodes):
+        # loop through nodes and randomly generate edge with prob = 0.1
+        for i, node_i in enumerate(frac_nodes):
+            for j, node_j in enumerate(frac_nodes):
 
-            if i < j and random.random() < 0.1:
-                data.edge_index = np.append(data.edge_index, [[node_i], [node_j]], axis=1)
+                if i < j and random.random() < 0.1:
+                    data.edge_index = np.append(data.edge_index, [[node_i], [node_j]], axis=1)
 
-    data.edge_index = torch.Tensor(data.edge_index).long()
+        data.edge_index = torch.Tensor(data.edge_index).long()
 
     return data
 

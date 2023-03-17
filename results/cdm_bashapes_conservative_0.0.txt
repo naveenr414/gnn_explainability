@@ -1,0 +1,15 @@
+Modification Function: conservative
+Modification Noise Amount: 0.0
+Dataset: bashapes
+Explaination method: cdm
+Baseline Activations
+0
+1
+2
+3
+Modified Activations
+0
+1
+2
+3
+completeness: 0.4153745432929527
